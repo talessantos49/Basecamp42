@@ -6,7 +6,7 @@
 /*   By: tasantos <tasantos@student.42sp.org.br>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2022/07/19 14:37:22 by tasantos          #+#    #+#             */
-/*   Updated: 2022/09/20 17:30:00 by tasantos         ###   ########.fr       */
+/*   Updated: 2022/09/20 18:07:08 by tasantos         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,14 +22,6 @@
 
 #define MLX_ERROR 1
 
-typedef struct s_data
-{
-	void	*mlx;
-	void	*win;
-	int		height;
-	int		width;
-}	t_data;
-
 typedef struct s_map
 {
 	char	**matrix;
@@ -37,70 +29,45 @@ typedef struct s_map
 	int		n_col;
 }	t_map;
 
-int	handle_no_event(void *data)
+typedef struct s_img
+{
+	void	*rock;
+	void	*capy;
+	void	*bkg_grass;
+	void	*capy_red;
+	void	*bkg_water;
+} t_img;
+
+typedef struct s_game
+{
+	void	*mlx;
+	void	*win;
+	t_map	map;
+	t_img	img;
+}	t_game;
+
+int	handle_no_event(void *game)
 {
 	/* This function needs to exist, but it is useless for the moment */
 	return (0);
 }
 
-int	handle_keypress(int keysym, t_data *data)
+int	handle_keypress(int keysym, t_game *game)
 {
 	if (keysym == XK_Escape)
-		mlx_destroy_window(data->mlx, data->win);
+		mlx_destroy_window(game->mlx, game->win);
 	if (keysym == 119) //w = 119
-		mlx_destroy_window(data->mlx, data->win);
+		mlx_destroy_window(game->mlx, game->win);
 	printf("Keypress: %d\n", keysym);
 	return (0);
 }
 
-int	window_width(char	*path_map)
-{
-	int		file;
-	int		width;
-	char	*line;
-
-	width = 0;
-	file = open(path_map, O_RDONLY);
-	line = get_next_line(file);
-	while (ft_strchr(line, '1') == NULL)
-		line = get_next_line(file);
-	line = ft_strchr(line, '1');
-	width = ft_strlen(line);
-	return (width - 1);
-}
-
-int window_height(char	*path_map)
-{
-	int		file;
-	int		height;
-	char	*line;
-
-	height = 0;
-	file = open(path_map, O_RDONLY);
-	line = get_next_line(file);
-	while (ft_strchr(line, '1') == NULL)
-		line = get_next_line(file);
-	line = ft_strchr(line, '1');
-	while (line != NULL)
-	{
-		line = get_next_line(file);
-		height++;
-	}
-	return (height);
-}
-
 void map_dimensions(t_map *map)
 {
-	int	i;
-	int	j;
-	int width;
 	int		file;
 	char	*line;
 	char	*path_map = "./maps/map.ber";
-	int	height;
 
-	width = 0;
-	height = 0;
 	map->n_row = 0;
 	file = open(path_map, O_RDONLY);
 	line = get_next_line(file);
@@ -108,21 +75,26 @@ void map_dimensions(t_map *map)
 		line = get_next_line(file);
 	line = ft_strchr(line, '1');
 	map->n_col = ft_strlen(line);
-	width = ft_strlen(line);
 	while (line != NULL)
 	{
 		line = get_next_line(file);
-		height++;
 		map->n_row++;
 	}
-	ft_printf("O valor de height é: [%i]\nO valor de n_row é: [%i]\nO valor de n_col é: [%i]\nO valor de width é: [%i]\n", height, map->n_row, map->n_col, width);
+}
+
+void	*render_img(char *path_img, t_game *game)
+{
+	int	width;
+	int	height;
+
+	return (mlx_xpm_file_to_image(game->mlx, path_img, &width, &height));
 }
 
 int main()
 {
 	t_map map;
-	t_data data;
-	data.mlx = mlx_init();
+	t_game game;
+	game.mlx = mlx_init();
 	
 	int     fd;
     char    *line;
@@ -132,39 +104,26 @@ int main()
 	int		next_line;
 	int		first_line;
 
-    int     x;
-	int		i;
-    int     y;
-	int		j;
-	int		c;
-	int		p;
-	int		w;
-	int		t;
-	int		r;
-	int		k;
 	int		size_x = 0;
 	int		size_y = 0;
-	void	*bkg_grass = mlx_xpm_file_to_image(data.mlx, "./images/backgrouds/Grass_2.xpm", &x, &y);
-	void	*bkg_water = mlx_xpm_file_to_image(data.mlx, "./images/backgrouds/Water.xpm", &w, &t);
-	void	*img = mlx_xpm_file_to_image(data.mlx, "./images/sprites/capy_red.xpm", &i, &j);
-	void	*capy = mlx_xpm_file_to_image(data.mlx, "./images/sprites/capy.xpm", &c, &p);
-	void	*rock = mlx_xpm_file_to_image(data.mlx, "./images/backgrouds/Rock.xpm",&r, &k);
+	void	*bkg_grass = render_img("./images/backgrouds/Grass_2.xpm", &game);
+	void	*bkg_water = render_img("./images/backgrouds/Water.xpm", &game);
+	void	*img = render_img ("./images/sprites/capy_red.xpm", &game);
+	void	*capy = render_img ("./images/sprites/capy.xpm", &game);
+	void	*rock = render_img ("./images/backgrouds/Rock.xpm", &game);
 
 	int		len;
 	map_dimensions(&map);
-	ft_printf("O valor de n_row é: [%i]\nO valor de n_col é: [%i]\n", map.n_row, map.n_col);
-	data.width = window_width("./maps/map.ber");
-	data.height = window_height("./maps/map.ber");
-	data.win = mlx_new_window(data.mlx, data.width * 32, data.height * 32, "Capivarias");
-	if (data.win == NULL)
+	
+	game.win = mlx_new_window(game.mlx, (map.n_col -1) * 32, map.n_row * 32, "Capivarias");
+	if (game.win == NULL)
 	{
-		free(data.win);
+		free(game.win);
 		return (1);
 	}
 	
-	//mlx_key_hook(data.win, key_hook, &data);
-	mlx_loop_hook(data.mlx, &handle_no_event, &data);
-	mlx_hook(data.win, KeyPress, KeyPressMask, &handle_keypress, &data);
+	mlx_loop_hook(game.mlx, &handle_no_event, &game);
+	mlx_hook(game.win, KeyPress, KeyPressMask, &handle_keypress, &game);
 
 	fd = open("./maps/map.ber", O_RDONLY);
     line = get_next_line(fd);	
@@ -190,15 +149,15 @@ int main()
 			{
 				result_start[size] = line[size];
 				if (result_start[size] == '1')
-					mlx_put_image_to_window(data.mlx, data.win, rock, size * 32, next_line * 32);
+					mlx_put_image_to_window(game.mlx, game.win, rock, size * 32, next_line * 32);
 				else if (result_start[size] == 'P')
-					mlx_put_image_to_window(data.mlx, data.win, capy, size * 32, next_line * 32);
+					mlx_put_image_to_window(game.mlx, game.win, capy, size * 32, next_line * 32);
 				else if (result_start[size] == 'E')
-					mlx_put_image_to_window(data.mlx, data.win, bkg_water, size * 32, next_line * 32);
+					mlx_put_image_to_window(game.mlx, game.win, bkg_water, size * 32, next_line * 32);
 				else if (result_start[size] == '0')
-					mlx_put_image_to_window(data.mlx, data.win, bkg_grass, size * 32, next_line * 32);
+					mlx_put_image_to_window(game.mlx, game.win, bkg_grass, size * 32, next_line * 32);
 				else if (result_start[size] == 'C')
-					mlx_put_image_to_window(data.mlx, data.win, img, size * 32, next_line * 32);
+					mlx_put_image_to_window(game.mlx, game.win, img, size * 32, next_line * 32);
 			}
 			else 
 				ft_printf("\n\nERROR INVALID MAP size = %i\n\n", size);
@@ -211,7 +170,7 @@ int main()
 		next_line++;
 	}
 	ft_printf("O valor total de linhas é: %i\n", next_line);
-    mlx_loop(data.mlx);
-	mlx_destroy_display(data.mlx);
-	free(data.mlx);
+    mlx_loop(game.mlx);
+	mlx_destroy_display(game.mlx);
+	free(game.mlx);
 }
